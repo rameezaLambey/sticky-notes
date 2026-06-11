@@ -5,5 +5,8 @@ data class Note(
     val title: String,
     val content: String,
     val timestamp: Long,
-    val color: Int
+    val color: Int,
+    val isBold: Boolean = false,
+    val isItalic: Boolean = false,
+    val isUnderlined: Boolean = false
 )

@@ -15,9 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.*
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.navigation.NavController
+import com.rameeza.stickynotesapp.domain.model.Note
 import com.rameeza.stickynotesapp.ui.util.Screen
 
 @Composable
@@ -27,6 +32,30 @@ fun NotesScreen(
     viewModel: NotesViewModel = viewModel(factory = viewModelFactory)
 ) {
     val state = viewModel.state.value
+    var noteToDelete by remember { mutableStateOf<Note?>(null) }
+
+    if (noteToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            title = { Text("Delete Note") },
+            text = { Text("Are you sure you want to delete this note?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        noteToDelete?.let { viewModel.deleteNote(it) }
+                        noteToDelete = null
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         floatingActionButton = {
@@ -57,12 +86,21 @@ fun NotesScreen(
                 items = state.notes,
                 key = { it.id ?: it.hashCode() }
             ) { note ->
+                val formattingInfo = buildString {
+                    if (note.isBold) append("bold ")
+                    if (note.isItalic) append("italic ")
+                    if (note.isUnderlined) append("underlined ")
+                }.trim()
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .animateItem()
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "Note: ${note.title}. ${if (formattingInfo.isNotEmpty()) "Style: $formattingInfo. " else ""}${note.content}"
+                        }
                         .clickable(
-                            onClickLabel = "Edit note ${note.title}"
+                            onClickLabel = "Edit note"
                         ) {
                             navController.navigate(
                                 Screen.AddEditNoteScreen.route + "?noteId=${note.id}"
@@ -85,15 +123,16 @@ fun NotesScreen(
                         ) {
                             Text(
                                 text = note.title,
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = Color.Black,
-                                modifier = Modifier.semantics { 
-                                    contentDescription = "Note title: ${note.title}"
-                                }
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = if (note.isBold) FontWeight.Bold else FontWeight.Normal,
+                                    fontStyle = if (note.isItalic) FontStyle.Italic else FontStyle.Normal,
+                                    textDecoration = if (note.isUnderlined) TextDecoration.Underline else TextDecoration.None
+                                ),
+                                color = Color.Black
                             )
                             IconButton(
                                 onClick = {
-                                    viewModel.deleteNote(note)
+                                    noteToDelete = note
                                 },
                                 modifier = Modifier.semantics { 
                                     contentDescription = "Delete note ${note.title}"
@@ -109,11 +148,12 @@ fun NotesScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = note.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Black.copy(alpha = 0.8f),
-                            modifier = Modifier.semantics { 
-                                contentDescription = "Note content: ${note.content}"
-                            }
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = if (note.isBold) FontWeight.Bold else FontWeight.Normal,
+                                fontStyle = if (note.isItalic) FontStyle.Italic else FontStyle.Normal,
+                                textDecoration = if (note.isUnderlined) TextDecoration.Underline else TextDecoration.None
+                            ),
+                            color = Color.Black.copy(alpha = 0.8f)
                         )
                     }
                 }

@@ -27,6 +27,15 @@ class AddEditNoteViewModel @Inject constructor(
     private val _noteColor = mutableIntStateOf(NoteColors.random().toArgb())
     val noteColor: State<Int> = _noteColor
 
+    private val _isBold = mutableStateOf(false)
+    val isBold: State<Boolean> = _isBold
+
+    private val _isItalic = mutableStateOf(false)
+    val isItalic: State<Boolean> = _isItalic
+
+    private val _isUnderlined = mutableStateOf(false)
+    val isUnderlined: State<Boolean> = _isUnderlined
+
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
@@ -40,6 +49,9 @@ class AddEditNoteViewModel @Inject constructor(
                     _noteTitle.value = note.title
                     _noteContent.value = note.content
                     _noteColor.intValue = note.color
+                    _isBold.value = note.isBold
+                    _isItalic.value = note.isItalic
+                    _isUnderlined.value = note.isUnderlined
                 }
             }
         }
@@ -57,7 +69,25 @@ class AddEditNoteViewModel @Inject constructor(
         _noteColor.intValue = color
     }
 
+    fun toggleBold() {
+        _isBold.value = !_isBold.value
+    }
+
+    fun toggleItalic() {
+        _isItalic.value = !_isItalic.value
+    }
+
+    fun toggleUnderline() {
+        _isUnderlined.value = !_isUnderlined.value
+    }
+
     fun saveNote() {
+        if (noteTitle.value.isBlank() && noteContent.value.isBlank()) {
+            viewModelScope.launch {
+                _eventFlow.emit(UiEvent.ShowEmptyNoteDialog)
+            }
+            return
+        }
         viewModelScope.launch {
             noteUseCases.addNote(
                 Note(
@@ -65,7 +95,10 @@ class AddEditNoteViewModel @Inject constructor(
                     content = noteContent.value,
                     timestamp = System.currentTimeMillis(),
                     color = noteColor.value,
-                    id = currentNoteId
+                    id = currentNoteId,
+                    isBold = isBold.value,
+                    isItalic = isItalic.value,
+                    isUnderlined = isUnderlined.value
                 )
             )
             _eventFlow.emit(UiEvent.SaveNote)
@@ -74,5 +107,6 @@ class AddEditNoteViewModel @Inject constructor(
 
     sealed class UiEvent {
         object SaveNote : UiEvent()
+        object ShowEmptyNoteDialog : UiEvent()
     }
 }

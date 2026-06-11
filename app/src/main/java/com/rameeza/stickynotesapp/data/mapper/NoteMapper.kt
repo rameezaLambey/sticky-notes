@@ -9,7 +9,10 @@ fun NoteEntity.toNote(): Note {
         title = title,
         content = content,
         timestamp = timestamp,
-        color = color
+        color = color,
+        isBold = isBold,
+        isItalic = isItalic,
+        isUnderlined = isUnderlined
     )
 }
 
@@ -19,6 +22,9 @@ fun Note.toNoteEntity(): NoteEntity {
         title = title,
         content = content,
         timestamp = timestamp,
-        color = color
+        color = color,
+        isBold = isBold,
+        isItalic = isItalic,
+        isUnderlined = isUnderlined
     )
 }

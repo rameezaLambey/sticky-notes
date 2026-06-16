@@ -6,12 +6,19 @@ import com.rameeza.stickynotesapp.data.local.NoteDatabase
 import com.rameeza.stickynotesapp.data.repository.NoteRepositoryImpl
 import com.rameeza.stickynotesapp.domain.repository.NoteRepository
 import com.rameeza.stickynotesapp.domain.use_case.*
+import com.rameeza.stickynotesapp.util.VoiceToTextParser
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
 
 @Module
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideVoiceToTextParser(app: Application): VoiceToTextParser {
+        return VoiceToTextParser(app)
+    }
 
     @Provides
     @Singleton

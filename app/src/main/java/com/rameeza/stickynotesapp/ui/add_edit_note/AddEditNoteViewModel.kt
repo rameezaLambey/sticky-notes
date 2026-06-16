@@ -12,10 +12,13 @@ import com.rameeza.stickynotesapp.ui.theme.NoteColors
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import com.rameeza.stickynotesapp.util.VoiceToTextParser
+import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
 
 class AddEditNoteViewModel @Inject constructor(
-    private val noteUseCases: NoteUseCases
+    private val noteUseCases: NoteUseCases,
+    val voiceToTextParser: VoiceToTextParser
 ) : ViewModel() {
 
     private val _noteTitle = mutableStateOf("")
@@ -23,6 +26,62 @@ class AddEditNoteViewModel @Inject constructor(
 
     private val _noteContent = mutableStateOf("")
     val noteContent: State<String> = _noteContent
+
+    private val _isRecordingTitle = mutableStateOf(false)
+    val isRecordingTitle: State<Boolean> = _isRecordingTitle
+
+    private val _isRecordingContent = mutableStateOf(false)
+    val isRecordingContent: State<Boolean> = _isRecordingContent
+
+    private var textBeforeRecording = ""
+
+    init {
+        viewModelScope.launch {
+            voiceToTextParser.state.collect { state ->
+                val isTitle = _isRecordingTitle.value
+                val isContent = _isRecordingContent.value
+                val newText = state.spokenText.trim()
+                
+                if (isTitle || isContent) {
+                    if (newText.isNotBlank()) {
+                        if (isTitle) {
+                            _noteTitle.value = if (textBeforeRecording.isBlank()) newText else "${textBeforeRecording.trim()} $newText"
+                        } else {
+                            _noteContent.value = if (textBeforeRecording.isBlank()) newText else "${textBeforeRecording.trim()} $newText"
+                        }
+                    }
+                    
+                    if (!state.isSpeaking) {
+                        _isRecordingTitle.value = false
+                        _isRecordingContent.value = false
+                        textBeforeRecording = ""
+                    }
+                }
+            }
+        }
+    }
+
+    fun toggleRecordTitle() {
+        if (_isRecordingTitle.value) {
+            voiceToTextParser.stopListening()
+        } else {
+            _isRecordingContent.value = false
+            _isRecordingTitle.value = true
+            textBeforeRecording = _noteTitle.value
+            voiceToTextParser.startListening()
+        }
+    }
+
+    fun toggleRecordContent() {
+        if (_isRecordingContent.value) {
+            voiceToTextParser.stopListening()
+        } else {
+            _isRecordingTitle.value = false
+            _isRecordingContent.value = true
+            textBeforeRecording = _noteContent.value
+            voiceToTextParser.startListening()
+        }
+    }
 
     private val _noteColor = mutableIntStateOf(NoteColors.random().toArgb())
     val noteColor: State<Int> = _noteColor

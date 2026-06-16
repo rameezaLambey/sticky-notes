@@ -38,6 +38,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.res.stringResource
+import com.rameeza.stickynotesapp.R
 import com.rameeza.stickynotesapp.ui.theme.NoteColors
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -73,11 +75,11 @@ fun AddEditNoteScreen(
     var showEmptyDialog by remember { mutableStateOf(false) }
 
     val colorNames = mapOf(
-        NoteColors[0] to "Yellow",
-        NoteColors[1] to "Pink",
-        NoteColors[2] to "Blue",
-        NoteColors[3] to "Green",
-        NoteColors[4] to "Orange"
+        NoteColors[0] to stringResource(R.string.color_yellow),
+        NoteColors[1] to stringResource(R.string.color_pink),
+        NoteColors[2] to stringResource(R.string.color_blue),
+        NoteColors[3] to stringResource(R.string.color_green),
+        NoteColors[4] to stringResource(R.string.color_orange)
     )
 
     val noteBackgroundAnimatable = remember {
@@ -112,11 +114,11 @@ fun AddEditNoteScreen(
     if (showEmptyDialog) {
         AlertDialog(
             onDismissRequest = { showEmptyDialog = false },
-            title = { Text("Empty Note") },
-            text = { Text("You haven't added any content. Notes without text won't be saved. Would you like to add some contents?") },
+            title = { Text(stringResource(R.string.empty_note_title)) },
+            text = { Text(stringResource(R.string.empty_note_message)) },
             confirmButton = {
                 TextButton(onClick = { showEmptyDialog = false }) {
-                    Text("Add Contents")
+                    Text(stringResource(R.string.add_contents))
                 }
             },
             dismissButton = {
@@ -124,7 +126,7 @@ fun AddEditNoteScreen(
                     showEmptyDialog = false
                     navController.navigateUp()
                 }) {
-                    Text("Discard")
+                    Text(stringResource(R.string.discard))
                 }
             }
         )
@@ -139,7 +141,7 @@ fun AddEditNoteScreen(
                     },
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = "Save note")
+                    Icon(imageVector = Icons.Default.Check, contentDescription = stringResource(R.string.save_note))
                 }
             },
             containerColor = noteBackgroundAnimatable.value
@@ -183,9 +185,13 @@ fun AddEditNoteScreen(
                                     viewModel.onColorChanged(colorInt)
                                 }
                                 .semantics {
-                                    val colorName = colorNames[color] ?: "Unknown"
-                                    contentDescription = "$colorName color"
-                                    stateDescription = if (viewModel.noteColor.value == colorInt) "Selected" else "Not selected"
+                                    val colorName = colorNames[color] ?: context.getString(R.string.color_unknown)
+                                    contentDescription = context.getString(R.string.color_description, colorName)
+                                    stateDescription = if (viewModel.noteColor.value == colorInt) {
+                                        context.getString(R.string.custom_selected)
+                                    } else {
+                                        context.getString(R.string.custom_not_selected)
+                                    }
                                 }
                         )
                     }
@@ -197,38 +203,40 @@ fun AddEditNoteScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Start
                 ) {
+                    val activeStr = stringResource(R.string.active)
+                    val inactiveStr = stringResource(R.string.inactive)
                     IconButton(
                         onClick = { viewModel.toggleBold() },
                         modifier = Modifier.semantics {
-                            stateDescription = if (isBold) "Active" else "Inactive"
+                            stateDescription = if (isBold) activeStr else inactiveStr
                         },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = if (isBold) Color.Black.copy(alpha = 0.1f) else Color.Transparent
                         )
                     ) {
-                        Icon(Icons.Default.FormatBold, contentDescription = "Bold text")
+                        Icon(Icons.Default.FormatBold, contentDescription = stringResource(R.string.bold_text))
                     }
                     IconButton(
                         onClick = { viewModel.toggleItalic() },
                         modifier = Modifier.semantics {
-                            stateDescription = if (isItalic) "Active" else "Inactive"
+                            stateDescription = if (isItalic) activeStr else inactiveStr
                         },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = if (isItalic) Color.Black.copy(alpha = 0.1f) else Color.Transparent
                         )
                     ) {
-                        Icon(Icons.Default.FormatItalic, contentDescription = "Italic text")
+                        Icon(Icons.Default.FormatItalic, contentDescription = stringResource(R.string.italic_text))
                     }
                     IconButton(
                         onClick = { viewModel.toggleUnderline() },
                         modifier = Modifier.semantics {
-                            stateDescription = if (isUnderlined) "Active" else "Inactive"
+                            stateDescription = if (isUnderlined) activeStr else inactiveStr
                         },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = if (isUnderlined) Color.Black.copy(alpha = 0.1f) else Color.Transparent
                         )
                     ) {
-                        Icon(Icons.Default.FormatUnderlined, contentDescription = "Underline text")
+                        Icon(Icons.Default.FormatUnderlined, contentDescription = stringResource(R.string.underline_text))
                     }
                 }
 
@@ -250,12 +258,12 @@ fun AddEditNoteScreen(
                             viewModel.onTitleChanged(it)
                         },
                         placeholder = {
-                            Text(text = "Enter title...", style = MaterialTheme.typography.headlineMedium)
+                            Text(text = stringResource(R.string.enter_title), style = MaterialTheme.typography.headlineMedium)
                         },
                         modifier = Modifier
                             .weight(1f)
                             .semantics {
-                                contentDescription = "Note title"
+                                contentDescription = context.getString(R.string.note_title)
                             },
                         singleLine = true,
                         textStyle = MaterialTheme.typography.headlineMedium.copy(
@@ -286,7 +294,7 @@ fun AddEditNoteScreen(
                     ) {
                         Icon(
                             imageVector = if (viewModel.isRecordingTitle.value) Icons.Default.MicOff else Icons.Default.Mic,
-                            contentDescription = "Voice to text for title",
+                            contentDescription = stringResource(R.string.voice_to_text_title),
                             tint = if (viewModel.isRecordingTitle.value) Color.Red else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -301,12 +309,12 @@ fun AddEditNoteScreen(
                             viewModel.onContentChanged(it)
                         },
                         placeholder = {
-                            Text(text = "Enter content...", style = textStyle)
+                            Text(text = stringResource(R.string.enter_content), style = textStyle)
                         },
                         modifier = Modifier
                             .fillMaxSize()
                             .semantics {
-                                contentDescription = "Note content"
+                                contentDescription = context.getString(R.string.note_content)
                             },
                         textStyle = textStyle,
                         colors = TextFieldDefaults.colors(
@@ -335,7 +343,7 @@ fun AddEditNoteScreen(
                     ) {
                         Icon(
                             imageVector = if (viewModel.isRecordingContent.value) Icons.Default.MicOff else Icons.Default.Mic,
-                            contentDescription = "Voice to text for content",
+                            contentDescription = stringResource(R.string.voice_to_text_content),
                             tint = if (viewModel.isRecordingContent.value) Color.Red else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -385,14 +393,14 @@ fun VoiceRecordingOverlay(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Listening...",
+                        text = stringResource(R.string.listening),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = if (spokenText.isBlank()) "Start speaking..." else spokenText,
+                        text = if (spokenText.isBlank()) stringResource(R.string.start_speaking) else spokenText,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -410,7 +418,7 @@ fun VoiceRecordingOverlay(
                         onClick = onStop,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Text("Stop Recording")
+                        Text(stringResource(R.string.stop_recording))
                     }
                 }
             }

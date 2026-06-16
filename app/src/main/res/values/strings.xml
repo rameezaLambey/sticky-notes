@@ -1,3 +1,49 @@
 <resources>
     <string name="app_name">StickyNotesApp</string>
+
+    <!-- General -->
+    <string name="cancel">Cancel</string>
+    <string name="discard">Discard</string>
+    <string name="delete">Delete</string>
+
+    <!-- Notes Screen -->
+    <string name="delete_note_title">Delete Note</string>
+    <string name="delete_note_message">Are you sure you want to delete this note?</string>
+    <string name="add_new_note">Add new note</string>
+    <string name="list_of_notes">List of notes</string>
+    <string name="edit_note">Edit note</string>
+    <string name="delete_note_with_title">Delete note %1$s</string>
+    <string name="note_content_description">Note: %1$s. %2$s%3$s</string>
+    <string name="style_formatting">Style: %1$s. </string>
+
+    <!-- Add/Edit Note Screen -->
+    <string name="empty_note_title">Empty Note</string>
+    <string name="empty_note_message">You haven\'t added any content. Notes without text won\'t be saved. Would you like to add some contents?</string>
+    <string name="add_contents">Add Contents</string>
+    <string name="save_note">Save note</string>
+    <string name="color_description">%1$s color</string>
+    <string name="custom_selected">Selected</string>
+    <string name="custom_not_selected">Not selected</string>
+    <string name="active">Active</string>
+    <string name="inactive">Inactive</string>
+    <string name="bold_text">Bold text</string>
+    <string name="italic_text">Italic text</string>
+    <string name="underline_text">Underline text</string>
+    <string name="enter_title">Enter title…</string>
+    <string name="note_title">Note title</string>
+    <string name="voice_to_text_title">Voice to text for title</string>
+    <string name="enter_content">Enter content…</string>
+    <string name="note_content">Note content</string>
+    <string name="voice_to_text_content">Voice to text for content</string>
+    <string name="listening">Listening…</string>
+    <string name="start_speaking">Start speaking…</string>
+    <string name="stop_recording">Stop Recording</string>
+
+    <!-- Colors -->
+    <string name="color_yellow">Yellow</string>
+    <string name="color_pink">Pink</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_green">Green</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_unknown">Unknown</string>
 </resources>

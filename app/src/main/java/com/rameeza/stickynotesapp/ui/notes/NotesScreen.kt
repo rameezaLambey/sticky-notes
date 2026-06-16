@@ -22,6 +22,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.rameeza.stickynotesapp.R
 import com.rameeza.stickynotesapp.domain.model.Note
 import com.rameeza.stickynotesapp.ui.util.Screen
 
@@ -31,14 +34,15 @@ fun NotesScreen(
     viewModelFactory: ViewModelProvider.Factory,
     viewModel: NotesViewModel = viewModel(factory = viewModelFactory)
 ) {
+    val context = LocalContext.current
     val state = viewModel.state.value
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
 
     if (noteToDelete != null) {
         AlertDialog(
             onDismissRequest = { noteToDelete = null },
-            title = { Text("Delete Note") },
-            text = { Text("Are you sure you want to delete this note?") },
+            title = { Text(stringResource(R.string.delete_note_title)) },
+            text = { Text(stringResource(R.string.delete_note_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -46,12 +50,12 @@ fun NotesScreen(
                         noteToDelete = null
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { noteToDelete = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -65,7 +69,7 @@ fun NotesScreen(
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.semantics { 
-                    contentDescription = "Add new note"
+                    contentDescription = context.getString(R.string.add_new_note)
                 }
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null)
@@ -77,7 +81,7 @@ fun NotesScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .semantics { 
-                    contentDescription = "List of notes"
+                    contentDescription = context.getString(R.string.list_of_notes)
                 },
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -92,15 +96,24 @@ fun NotesScreen(
                     if (note.isUnderlined) append("underlined ")
                 }.trim()
 
+                val styleStr = if (formattingInfo.isNotEmpty()) {
+                    stringResource(R.string.style_formatting, formattingInfo)
+                } else ""
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .animateItem()
                         .semantics(mergeDescendants = true) {
-                            contentDescription = "Note: ${note.title}. ${if (formattingInfo.isNotEmpty()) "Style: $formattingInfo. " else ""}${note.content}"
+                            contentDescription = context.getString(
+                                R.string.note_content_description,
+                                note.title,
+                                styleStr,
+                                note.content
+                            )
                         }
                         .clickable(
-                            onClickLabel = "Edit note"
+                            onClickLabel = stringResource(R.string.edit_note)
                         ) {
                             navController.navigate(
                                 Screen.AddEditNoteScreen.route + "?noteId=${note.id}"
@@ -135,7 +148,7 @@ fun NotesScreen(
                                     noteToDelete = note
                                 },
                                 modifier = Modifier.semantics { 
-                                    contentDescription = "Delete note ${note.title}"
+                                    contentDescription = context.getString(R.string.delete_note_with_title, note.title)
                                 }
                             ) {
                                 Icon(

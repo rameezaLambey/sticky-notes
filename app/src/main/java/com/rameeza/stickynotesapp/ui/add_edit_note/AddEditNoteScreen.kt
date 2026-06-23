@@ -6,19 +6,64 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.FormatBold
+import androidx.compose.material.icons.filled.FormatItalic
+import androidx.compose.material.icons.filled.FormatUnderlined
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,18 +72,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.compose.ui.res.stringResource
 import com.rameeza.stickynotesapp.R
 import com.rameeza.stickynotesapp.ui.theme.NoteColors
 import kotlinx.coroutines.flow.collectLatest
@@ -53,9 +100,28 @@ fun AddEditNoteScreen(
 ) {
     val titleState = viewModel.noteTitle.value
     val contentState = viewModel.noteContent.value
+    val textFieldValue = remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = contentState,
+                selection = TextRange(contentState.length)
+            )
+        )
+    }
+    
+    // Keep textFieldValue in sync with contentState when it changes externally (like loading or voice input)
+    LaunchedEffect(contentState) {
+        if (contentState != textFieldValue.value.text) {
+            textFieldValue.value = textFieldValue.value.copy(
+                text = contentState,
+                selection = TextRange(contentState.length)
+            )
+        }
+    }
     val isBold = viewModel.isBold.value
     val isItalic = viewModel.isItalic.value
     val isUnderlined = viewModel.isUnderlined.value
+    val isChecklist = viewModel.isChecklist.value
     
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -201,7 +267,60 @@ fun AddEditNoteScreen(
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextField(
+                        value = titleState,
+                        onValueChange = {
+                            viewModel.onTitleChanged(it)
+                        },
+                        placeholder = {
+                            Text(text = stringResource(R.string.enter_title), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics {
+                                contentDescription = context.getString(R.string.note_title)
+                            },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        )
+                    )
+                    IconButton(
+                        onClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                viewModel.toggleRecordTitle()
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            }
+                        },
+                        modifier = Modifier.padding(start = 8.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (viewModel.isRecordingTitle.value) Color.Red.copy(alpha = 0.1f) else Color.Transparent
+                        )
+                    ) {
+                        Icon(
+                            imageVector = if (viewModel.isRecordingTitle.value) Icons.Default.MicOff else Icons.Default.Mic,
+                            contentDescription = stringResource(R.string.voice_to_text_title),
+                            tint = if (viewModel.isRecordingTitle.value) Color.Red else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     val activeStr = stringResource(R.string.active)
                     val inactiveStr = stringResource(R.string.inactive)
@@ -238,9 +357,29 @@ fun AddEditNoteScreen(
                     ) {
                         Icon(Icons.Default.FormatUnderlined, contentDescription = stringResource(R.string.underline_text))
                     }
-                }
+                    
+                    VerticalDivider(
+                        modifier = Modifier
+                            .height(24.dp)
+                            .padding(horizontal = 8.dp),
+                        color = Color.Black.copy(alpha = 0.2f)
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    IconButton(
+                        onClick = { viewModel.toggleChecklist() },
+                        modifier = Modifier.semantics {
+                            stateDescription = if (isChecklist) activeStr else inactiveStr
+                        },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (isChecklist) Color.Black.copy(alpha = 0.1f) else Color.Transparent
+                        )
+                    ) {
+                        Icon(
+                            imageVector = if (isChecklist) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                            contentDescription = stringResource(R.string.toggle_checklist)
+                        )
+                    }
+                }
                 
                 val textStyle = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
@@ -248,65 +387,42 @@ fun AddEditNoteScreen(
                     textDecoration = if (isUnderlined) TextDecoration.Underline else TextDecoration.None
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = titleState,
-                        onValueChange = {
-                            viewModel.onTitleChanged(it)
-                        },
-                        placeholder = {
-                            Text(text = stringResource(R.string.enter_title), style = MaterialTheme.typography.headlineMedium)
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .semantics {
-                                contentDescription = context.getString(R.string.note_title)
-                            },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
-                            fontStyle = if (isItalic) FontStyle.Italic else FontStyle.Normal,
-                            textDecoration = if (isUnderlined) TextDecoration.Underline else TextDecoration.None
-                        ),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            disabledContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        )
-                    )
-                    IconButton(
-                        onClick = {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                viewModel.toggleRecordTitle()
-                            } else {
-                                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                            }
-                        },
-                        modifier = Modifier.padding(start = 8.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = if (viewModel.isRecordingTitle.value) Color.Red.copy(alpha = 0.1f) else Color.Transparent
-                        )
-                    ) {
-                        Icon(
-                            imageVector = if (viewModel.isRecordingTitle.value) Icons.Default.MicOff else Icons.Default.Mic,
-                            contentDescription = stringResource(R.string.voice_to_text_title),
-                            tint = if (viewModel.isRecordingTitle.value) Color.Red else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Box(modifier = Modifier.weight(1f)) {
                     TextField(
-                        value = contentState,
-                        onValueChange = {
-                            viewModel.onContentChanged(it)
+                        value = textFieldValue.value,
+                        onValueChange = { newValue ->
+                            val oldText = textFieldValue.value.text
+                            val newText = newValue.text
+                            
+                            // Prevent typing before checkboxes
+                            if (isChecklist && newText.length >= oldText.length) {
+                                val lines = newText.split("\n")
+                                val oldLines = oldText.split("\n")
+                                if (lines.size == oldLines.size) {
+                                    var blocked = false
+                                    for (i in lines.indices) {
+                                        val oldLine = if (i < oldLines.size) oldLines[i] else ""
+                                        val newLine = lines[i]
+                                        if ((oldLine.startsWith("☐ ") && !newLine.startsWith("☐ ")) ||
+                                            (oldLine.startsWith("☑ ") && !newLine.startsWith("☑ "))
+                                        ) {
+                                            blocked = true
+                                            break
+                                        }
+                                    }
+                                    if (blocked) {
+                                        textFieldValue.value = textFieldValue.value.copy(selection = newValue.selection)
+                                        return@TextField
+                                    }
+                                }
+                            }
+
+                            textFieldValue.value = newValue
+                            if (newText != contentState) {
+                                viewModel.onContentChanged(newText)
+                            }
                         },
                         placeholder = {
                             Text(text = stringResource(R.string.enter_content), style = textStyle)
@@ -325,6 +441,31 @@ fun AddEditNoteScreen(
                             unfocusedIndicatorColor = Color.Transparent,
                         )
                     )
+                    
+                    // Clickable overlay for checkboxes
+                    if (isChecklist) {
+                        Box(modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 16.dp, start = 16.dp)
+                        ) {
+                            val lines = contentState.split("\n")
+                            lines.forEachIndexed { index, line ->
+                                if (line.startsWith("☐ ") || line.startsWith("☑ ")) {
+                                    Box(
+                                        modifier = Modifier
+                                            .offset(y = (index * 24).dp) // Estimate line height
+                                            .size(24.dp)
+                                            .clickable(
+                                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                                indication = null
+                                            ) {
+                                                viewModel.toggleCheckItem(index)
+                                            }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     
                     IconButton(
                         onClick = {
@@ -398,7 +539,7 @@ fun VoiceRecordingOverlay(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Text(
                         text = if (spokenText.isBlank()) stringResource(R.string.start_speaking) else spokenText,
                         style = MaterialTheme.typography.bodyLarge,

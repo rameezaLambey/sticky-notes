@@ -31,6 +31,37 @@ class NotesViewModel @Inject constructor(
         }
     }
 
+    fun deleteSelectedNotes() {
+        viewModelScope.launch {
+            val notesToDelete = _state.value.notes.filter { it.id in _state.value.selectedNoteIds }
+            noteUseCases.deleteNotes(notesToDelete)
+            _state.value = _state.value.copy(
+                selectedNoteIds = emptySet(),
+                isSelectionMode = false
+            )
+        }
+    }
+
+    fun toggleSelection(noteId: Int) {
+        val currentSelected = _state.value.selectedNoteIds
+        val newSelected = if (noteId in currentSelected) {
+            currentSelected - noteId
+        } else {
+            currentSelected + noteId
+        }
+        _state.value = _state.value.copy(
+            selectedNoteIds = newSelected,
+            isSelectionMode = newSelected.isNotEmpty()
+        )
+    }
+
+    fun clearSelection() {
+        _state.value = _state.value.copy(
+            selectedNoteIds = emptySet(),
+            isSelectionMode = false
+        )
+    }
+
     private fun getNotes() {
         getNotesJob?.cancel()
         getNotesJob = noteUseCases.getNotes()

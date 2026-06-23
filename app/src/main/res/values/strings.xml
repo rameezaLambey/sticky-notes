@@ -46,4 +46,13 @@
     <string name="color_green">Green</string>
     <string name="color_orange">Orange</string>
     <string name="color_unknown">Unknown</string>
+    <string name="delete_notes_title">Delete Notes</string>
+    <string name="delete_notes_message">Are you sure you want to delete %1$d notes?</string>
+    <string name="delete_selected">Delete Selected</string>
+    <string name="cancel_selection">Cancel Selection</string>
+    <string name="items_selected">%1$d selected</string>
+    <string name="toggle_checklist">Toggle Checklist</string>
+    <string name="add_checklist_item">Add item</string>
+    <string name="select">Select</string>
+    <string name="select_all">Select All</string>
 </resources>

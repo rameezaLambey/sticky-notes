@@ -9,11 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.rameeza.stickynotesapp.domain.model.Note
 import com.rameeza.stickynotesapp.domain.use_case.NoteUseCases
 import com.rameeza.stickynotesapp.ui.theme.NoteColors
+import com.rameeza.stickynotesapp.util.VoiceToTextParser
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import com.rameeza.stickynotesapp.util.VoiceToTextParser
-import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
 
 class AddEditNoteViewModel @Inject constructor(
@@ -95,6 +94,9 @@ class AddEditNoteViewModel @Inject constructor(
     private val _isUnderlined = mutableStateOf(false)
     val isUnderlined: State<Boolean> = _isUnderlined
 
+    private val _isChecklist = mutableStateOf(false)
+    val isChecklist: State<Boolean> = _isChecklist
+
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
@@ -111,6 +113,7 @@ class AddEditNoteViewModel @Inject constructor(
                     _isBold.value = note.isBold
                     _isItalic.value = note.isItalic
                     _isUnderlined.value = note.isUnderlined
+                    _isChecklist.value = note.isChecklist
                 }
             }
         }
@@ -121,6 +124,36 @@ class AddEditNoteViewModel @Inject constructor(
     }
 
     fun onContentChanged(content: String) {
+        if (_isChecklist.value) {
+            val oldContent = _noteContent.value
+            
+            // Check if user is trying to type before a checkbox
+            val lines = content.split("\n")
+            val oldLines = oldContent.split("\n")
+            
+            if (lines.size == oldLines.size) {
+                for (i in lines.indices) {
+                    if (lines[i] != oldLines[i] && oldLines[i].startsWith("☐ ") && !lines[i].startsWith("☐ ")) {
+                        // User tried to delete or type before the checkbox, prevent it or fix it
+                        _noteContent.value = oldContent
+                        return
+                    }
+                }
+            }
+
+            if (content.length > oldContent.length) {
+                // Find where the change happened
+                val diffIndex = content.zip(oldContent).indexOfFirst { it.first != it.second }
+                val index = if (diffIndex == -1) oldContent.length else diffIndex
+                
+                if (content.getOrNull(index) == '\n') {
+                    val prefix = content.substring(0, index + 1)
+                    val suffix = content.substring(index + 1)
+                    _noteContent.value = "${prefix}☐ $suffix"
+                    return
+                }
+            }
+        }
         _noteContent.value = content
     }
 
@@ -140,6 +173,37 @@ class AddEditNoteViewModel @Inject constructor(
         _isUnderlined.value = !_isUnderlined.value
     }
 
+    fun toggleCheckItem(lineIndex: Int) {
+        val lines = _noteContent.value.split("\n").toMutableList()
+        if (lineIndex in lines.indices) {
+            val line = lines[lineIndex]
+            lines[lineIndex] = when {
+                line.startsWith("☐ ") -> line.replaceFirst("☐ ", "☑ ")
+                line.startsWith("☑ ") -> line.replaceFirst("☑ ", "☐ ")
+                else -> line
+            }
+            _noteContent.value = lines.joinToString("\n")
+        }
+    }
+
+    fun toggleChecklist() {
+        _isChecklist.value = !_isChecklist.value
+        val currentContent = _noteContent.value
+        if (_isChecklist.value) {
+            if (currentContent.isBlank()) {
+                _noteContent.value = "☐ "
+            } else {
+                val lines = currentContent.split("\n")
+                val newContent = lines.joinToString("\n") { line ->
+                    if (line.isNotBlank() && !line.startsWith("☐ ")) "☐ $line" else line
+                }
+                _noteContent.value = newContent
+            }
+        } else {
+            _noteContent.value = currentContent.replace("☐ ", "")
+        }
+    }
+
     fun saveNote() {
         if (noteTitle.value.isBlank() && noteContent.value.isBlank()) {
             viewModelScope.launch {
@@ -157,7 +221,8 @@ class AddEditNoteViewModel @Inject constructor(
                     id = currentNoteId,
                     isBold = isBold.value,
                     isItalic = isItalic.value,
-                    isUnderlined = isUnderlined.value
+                    isUnderlined = isUnderlined.value,
+                    isChecklist = isChecklist.value
                 )
             )
             _eventFlow.emit(UiEvent.SaveNote)

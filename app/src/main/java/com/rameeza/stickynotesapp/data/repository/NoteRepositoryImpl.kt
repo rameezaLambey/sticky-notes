@@ -5,7 +5,9 @@ import com.rameeza.stickynotesapp.data.mapper.toNote
 import com.rameeza.stickynotesapp.data.mapper.toNoteEntity
 import com.rameeza.stickynotesapp.domain.model.Note
 import com.rameeza.stickynotesapp.domain.repository.NoteRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 class NoteRepositoryImpl(
@@ -14,7 +16,7 @@ class NoteRepositoryImpl(
     override fun getNotes(): Flow<List<Note>> {
         return dao.getAllNotes().map { entities ->
             entities.map { it.toNote() }
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
     override suspend fun getNoteById(id: Int): Note? {
@@ -27,5 +29,9 @@ class NoteRepositoryImpl(
 
     override suspend fun deleteNote(note: Note) {
         dao.deleteNote(note.toNoteEntity())
+    }
+
+    override suspend fun deleteNotes(notes: List<Note>) {
+        dao.deleteNotes(notes.map { it.toNoteEntity() })
     }
 }
